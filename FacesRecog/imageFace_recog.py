@@ -2,9 +2,8 @@ import face_recognition
 import os
 import cv2
 
-
 KNOWN_FACES_DIR = 'known_faces'
-UNKNOWN_FACES_DIR = 'unkown_faces'
+UNKNOWN_FACES_DIR = 'unknown_faces'
 TOLERANCE = 0.6
 FRAME_THICKNESS = 3
 FONT_THICKNESS = 2
@@ -39,12 +38,17 @@ for name in os.listdir(KNOWN_FACES_DIR):
         encoding = face_recognition.face_encodings(image)
 
         # Append encodings and name
-        known_faces.append(encoding)
+        if(len(encoding) > 0):
+            print(encoding)
+            known_faces.append(encoding)
+        
         known_names.append(name)
 
 
 print('Processing unknown faces...')
 # Now let's loop over a folder of faces we want to label
+print(UNKNOWN_FACES_DIR)
+print(os.listdir(UNKNOWN_FACES_DIR))
 for filename in os.listdir(UNKNOWN_FACES_DIR):
 
     # Load image
@@ -64,25 +68,42 @@ for filename in os.listdir(UNKNOWN_FACES_DIR):
 
     # But this time we assume that there might be more faces in an image - we can find faces of dirrerent people
     print(f', found {len(encodings)} face(s)')
+
+
+
     for face_encoding, face_location in zip(encodings, locations):
 
         # We use compare_faces (but might use face_distance as well)
         # Returns array of True/False values in order of passed known_faces
+
         results = face_recognition.compare_faces(known_faces, face_encoding, TOLERANCE)
 
+        print('Results')
+        print(results)
         # Since order is being preserved, we check if any face was found then grab index
         # then label (name) of first matching known face withing a tolerance
         match = None
-        if True in results:  # If at least one is true, get a name of first of found labels
-            match = known_names[results.index(True)]
+
+        truthy = False
+        for res in results:
+            if(all(res)):
+                truthy = True
+
+        if truthy:  # If at least one is true, get a name of first of found labels
+            match = known_names[0]
             print(f' - {match} from {results}')
 
             # Each location contains positions in order: top, right, bottom, left
             top_left = (face_location[3], face_location[0])
             bottom_right = (face_location[1], face_location[2])
 
+            print("Find Location")
+
             # Get color by name using our fancy function
             color = name_to_color(match)
+
+                        print("")
+
 
             # Paint frame
             cv2.rectangle(image, top_left, bottom_right, color, FRAME_THICKNESS)
@@ -102,3 +123,7 @@ for filename in os.listdir(UNKNOWN_FACES_DIR):
     cv2.imshow(filename, image)
     cv2.waitKey(0)
     cv2.destroyWindow(filename)
+
+
+
+
